@@ -17,18 +17,22 @@ pub struct Disc {
 
 struct Board {
     board: [[Color; Self::SIZE + 2]; Self::SIZE + 2],
-    update_log: Vec<Vec<Point>>,
+    update_log: Vec<Update>,
     movable_dir: [[[BitVec; Self::SIZE + 2]; Self::SIZE + 2]; Self::MAX_TURNS + 1],
     movable_positions: [Vec<Point>; Self::MAX_TURNS + 1],
     turns: usize,
     discs: ColorStorage<u32>,
     current_color: Color,
 }
+type Update = Vec<Disc>;
 
 struct ColorStorage<T>([T; 3]);
 impl<T> ColorStorage<T> {
     fn get(&self, color: &Color) -> &T {
-        &self.0[(color + 1) as usize]
+        &self.0[(*color + 1) as usize]
+    }
+    fn set(&mut self, color: &Color, count: T) {
+        self.0[(color + 1) as usize] = count;
     }
 }
 
@@ -184,7 +188,7 @@ impl Board {
             return false;
         }
 
-        self.flip_discs();
+        self.flip_discs(point);
 
         self.turns = self.turns + 1;
         self.current_color = -self.current_color;
@@ -194,17 +198,113 @@ impl Board {
         true
     }
 
-    fn flip_discs(&mut self) {}
+    fn flip_discs(&mut self, point: &Point) {
+        let direction = &self.movable_dir[self.turns][point.x][point.y];
+
+        self.board[point.x][point.y] = self.current_color;
+        let mut update: Update = Vec::new();
+        update.push(Disc::new(Point::new(point.x, point.y), self.current_color));
+
+        if direction[Self::DIRECTION_UPPER] {
+            let mut y = point.y;
+            while self.board[point.x][y - 1] != self.current_color {
+                y = y - 1;
+                self.board[point.x][y] = self.current_color;
+                update.push(Disc::new(Point::new(point.x, y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_LOWER] {
+            let mut y = point.y;
+            while self.board[point.x][y + 1] != self.current_color {
+                y = y + 1;
+                self.board[point.x][y] = self.current_color;
+                update.push(Disc::new(Point::new(point.x, y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_LEFT] {
+            let mut x = point.x;
+            while self.board[x - 1][point.y] != self.current_color {
+                x = x - 1;
+                self.board[x][point.y] = self.current_color;
+                update.push(Disc::new(Point::new(x, point.y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_RIGHT] {
+            let mut x = point.x;
+            while self.board[x + 1][point.y] != self.current_color {
+                x = x + 1;
+                self.board[x][point.y] = self.current_color;
+                update.push(Disc::new(Point::new(x, point.y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_UPPER_RIGHT] {
+            let mut x = point.x;
+            let mut y = point.y;
+            while self.board[x + 1][y - 1] != self.current_color {
+                x = x + 1;
+                y = y - 1;
+                self.board[x][y] = self.current_color;
+                update.push(Disc::new(Point::new(x, y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_UPPER_LEFT] {
+            let mut x = point.x;
+            let mut y = point.y;
+            while self.board[x - 1][y - 1] != self.current_color {
+                x = x - 1;
+                y = y - 1;
+                self.board[x][y] = self.current_color;
+                update.push(Disc::new(Point::new(x, y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_LOWER_LEFT] {
+            let mut x = point.x;
+            let mut y = point.y;
+            while self.board[x - 1][y + 1] != self.current_color {
+                x = x - 1;
+                y = y + 1;
+                self.board[x][y] = self.current_color;
+                update.push(Disc::new(Point::new(x, y), self.current_color));
+            }
+        }
+
+        if direction[Self::DIRECTION_LOWER_RIGHT] {
+            let mut x = point.x;
+            let mut y = point.y;
+            while self.board[x + 1][y + 1] != self.current_color {
+                x = x + 1;
+                y = y + 1;
+                self.board[x][y] = self.current_color;
+                update.push(Disc::new(Point::new(x, y), self.current_color));
+            }
+        }
+
+        let disc_diff = update.len();
+        self.discs.set(
+            &self.current_color,
+            *self.discs.get(&self.current_color) + disc_diff as u32,
+        );
+        self.discs.set(
+            &-self.current_color,
+            *self.discs.get(&-self.current_color) - (disc_diff - 1) as u32,
+        );
+        self.discs.set(&EMPTY, *self.discs.get(&EMPTY) - 1);
+        self.update_log.push(update);
+    }
     fn init_movable(&mut self) {
-        let mut disc = Disc::new(Point::new(0, 0), self.current_color);
         self.movable_positions[self.turns].clear();
         for x in 1..=(Self::SIZE) {
-            disc.point.x = x;
             for y in 1..=(Self::SIZE) {
-                disc.point.y = y;
+                let disc = Disc::new(Point::new(x, y), self.current_color);
                 let direction = self.movability(&disc);
                 if !direction.none() {
-                    self.movable_positions[self.turns].push(disc.point.clone())
+                    self.movable_positions[self.turns].push(disc.point)
                 }
                 self.movable_dir[self.turns][x][y] = direction;
             }
