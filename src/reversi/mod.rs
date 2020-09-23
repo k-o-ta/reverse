@@ -310,4 +310,38 @@ impl Board {
             }
         }
     }
+    fn is_game_over(&self) -> bool {
+        if self.turns == Self::MAX_TURNS {
+            return true;
+        }
+        if self.movable_positions[self.turns].len() != 0 {
+            return false;
+        }
+
+        let mut dis = Disc::new(Point::new(0, 0), -self.current_color);
+        for x in 0..Self::SIZE {
+            for y in 0..Self::SIZE {
+                if !self
+                    .movability(&Disc::new(Point::new(x, y), -self.current_color))
+                    .none()
+                {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    fn pass(&mut self) -> bool {
+        if self.movable_positions[self.turns].len() != 0 {
+            return false;
+        }
+        if self.is_game_over() {
+            return false;
+        }
+        self.current_color = -self.current_color;
+        self.update_log.push(Vec::new());
+        self.init_movable();
+        true
+    }
 }
