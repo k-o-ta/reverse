@@ -1,4 +1,5 @@
 use bit_vec::BitVec;
+use std::mem::{self, MaybeUninit};
 #[derive(Debug, Clone)]
 pub struct Point {
     x: usize,
@@ -69,6 +70,47 @@ impl Board {
     const DIRECTION_LOWER_RIGHT: usize = 5;
     const DIRECTION_RIGHT: usize = 6;
     const DIRECTION_UPPER_RIGHT: usize = 7;
+
+    fn new() -> Board {
+        // board
+        let mut board: [[Color; Self::SIZE + 2]; Self::SIZE + 2] =
+            [[EMPTY; Self::SIZE + 2]; Self::SIZE + 2];
+        for y in 0..(Self::SIZE + 2) {
+            board[0][y] = WALL;
+            board[Self::SIZE + 1][y] = WALL;
+        }
+        for x in 0..(Self::SIZE + 2) {
+            board[x][0] = WALL;
+            board[x][Self::SIZE + 1] = WALL;
+        }
+        board[4][4] = WHITE;
+        board[5][5] = WHITE;
+        board[4][5] = BLACK;
+        board[5][4] = BLACK;
+
+        // discs
+        let colors: [u32; 3] = [0; 3];
+        let mut discs: ColorStorage<u32> = ColorStorage(colors);
+        discs.set(&BLACK, 2);
+        discs.set(&WHITE, 2);
+        discs.set(&EMPTY, (Self::SIZE * Self::SIZE) as u32 - 4);
+
+        let mut board = Board {
+            board,
+            discs,
+            turns: 0,
+            current_color: BLACK,
+            update_log: Vec::new(),
+            movable_positions: unsafe { MaybeUninit::uninit().assume_init() },
+            movable_dir: unsafe { MaybeUninit::uninit().assume_init() },
+            // movable_dir: [[[BitVec::from_elem(9, false); Self::SIZE + 2]; Self::SIZE + 2];
+            //     Self::MAX_TURNS + 1],
+            // movable_dir: [[[BitVec; Self::SIZE + 2]; Self::SIZE + 2]; Self::MAX_TURNS + 1],
+        };
+        board.init_movable();
+        board
+    }
+
     fn movability(&self, disc: &Disc) -> BitVec {
         let mut direction = BitVec::from_elem(9, false);
         if self.board[disc.x()][disc.y()] == EMPTY {
