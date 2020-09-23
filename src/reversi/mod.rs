@@ -344,4 +344,41 @@ impl Board {
         self.init_movable();
         true
     }
+
+    fn undo(&mut self) -> bool {
+        if self.turns == 0 {
+            return false;
+        }
+        self.current_color = -self.current_color;
+        let update = self.update_log.pop().expect("it must not be none");
+
+        if update.is_empty() {
+            // 前手でpassせざるを得なかったということは、すでに置ける場所はないしdirもすべてNONEなので省略できる気がする
+            self.movable_positions[self.turns].clear();
+            for x in 1..=(Self::SIZE) {
+                for y in 1..=(Self::SIZE) {
+                    self.movable_dir[self.turns][x][y] = BitVec::from_elem(9, false);
+                }
+            }
+        } else {
+            self.turns = self.turns - 1;
+            self.board[update[0].x()][update[0].y()] = EMPTY;
+            for i in 1..(update.len()) {
+                self.board[update[i].x()][update[i].y()] = -self.current_color;
+            }
+
+            let disc_diff = update.len();
+            self.discs.set(
+                &self.current_color,
+                self.discs.get(&self.current_color) - disc_diff as u32,
+            );
+            self.discs.set(
+                &-self.current_color,
+                self.discs.get(&-self.current_color) + (disc_diff - 1) as u32,
+            );
+            self.discs.set(&EMPTY, self.discs.get(&EMPTY) + 1);
+        }
+
+        true
+    }
 }
