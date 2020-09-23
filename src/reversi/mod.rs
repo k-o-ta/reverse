@@ -423,4 +423,22 @@ impl Board {
 
         true
     }
+    fn count_disc(&self, color: &Color) -> u32 {
+        *self.discs.get(color)
+    }
+    fn get_color(&self, point: &Point) -> Color {
+        self.board[point.x][point.y]
+    }
+    fn get_movable_positions(&self) -> &Vec<Point> {
+        &self.movable_positions[self.turns]
+    }
+    fn get_update(&self) -> Option<&Vec<Disc>> {
+        self.update_log.last()
+    }
+    fn get_current_color(&self) -> Color {
+        self.current_color
+    }
+    fn get_turns(&self) -> usize {
+        self.turns
+    }
 }
