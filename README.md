@@ -3,3 +3,4 @@
 
 ## dev
 * `cargo watch -x 'check --tests'`
+* `cargo watch -x 'check --tests --examples'`

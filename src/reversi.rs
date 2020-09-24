@@ -9,10 +9,10 @@ pub struct Point {
 }
 
 pub type Color = i32;
-const EMPTY: Color = 0;
-const WHITE: Color = -1;
-const BLACK: Color = 1;
-const WALL: Color = 2;
+pub const EMPTY: Color = 0;
+pub const WHITE: Color = -1;
+pub const BLACK: Color = 1;
+pub const WALL: Color = 2;
 
 pub struct Disc {
     color: Color,
@@ -38,10 +38,10 @@ impl fmt::Display for Point {
 }
 
 impl Point {
-    fn new(x: usize, y: usize) -> Point {
+    pub fn new(x: usize, y: usize) -> Point {
         Point { x, y }
     }
-    fn from(str: &String) -> Result<Point, String> {
+    pub fn from(str: &String) -> Result<Point, String> {
         let mut chars = str.chars();
         let x = match chars.next() {
             Some('a') => 1,

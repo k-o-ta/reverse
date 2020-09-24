@@ -2,7 +2,7 @@ use crate::reversi::{Color, Disc, Point, BLACK, EMPTY, WALL, WHITE};
 use bit_vec::BitVec;
 use std::mem::{self, MaybeUninit};
 
-struct Board {
+pub struct Board {
     board: [[Color; Self::SIZE + 2]; Self::SIZE + 2],
     update_log: Vec<Update>,
     movable_dir: [[[BitVec; Self::SIZE + 2]; Self::SIZE + 2]; Self::MAX_TURNS + 1],
@@ -39,7 +39,7 @@ impl Board {
     const DIRECTION_RIGHT: usize = 6;
     const DIRECTION_UPPER_RIGHT: usize = 7;
 
-    fn new() -> Board {
+    pub fn new() -> Board {
         // board
         let mut board: [[Color; Self::SIZE + 2]; Self::SIZE + 2] =
             [[EMPTY; Self::SIZE + 2]; Self::SIZE + 2];
@@ -81,7 +81,7 @@ impl Board {
 
     fn movability(&self, disc: &Disc) -> BitVec {
         let mut direction = BitVec::from_elem(9, false);
-        if self.board[disc.x()][disc.y()] == EMPTY {
+        if self.board[disc.x()][disc.y()] != EMPTY {
             return direction;
         }
 
@@ -100,7 +100,7 @@ impl Board {
         if self.board[disc.x()][disc.y() + 1] == -disc.color {
             let x = disc.x();
             let mut y = disc.y() + 2;
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 y = y + 1;
             }
             if self.board[x][y] == disc.color {
@@ -112,7 +112,7 @@ impl Board {
         if self.board[disc.x() - 1][disc.y()] == -disc.color {
             let mut x = disc.x() - 2;
             let y = disc.y();
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x - 1;
             }
             if self.board[x][y] == disc.color {
@@ -124,7 +124,7 @@ impl Board {
         if self.board[disc.x() + 1][disc.y()] == -disc.color {
             let mut x = disc.x() + 2;
             let y = disc.y();
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x + 1;
             }
             if self.board[x][y] == disc.color {
@@ -136,7 +136,7 @@ impl Board {
         if self.board[disc.x() + 1][disc.y() - 1] == -disc.color {
             let mut x = disc.x() + 2;
             let mut y = disc.y() - 2;
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x + 1;
                 y = y - 1;
             }
@@ -149,7 +149,7 @@ impl Board {
         if self.board[disc.x() - 1][disc.y() - 1] == -disc.color {
             let mut x = disc.x() - 2;
             let mut y = disc.y() - 2;
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x - 1;
                 y = y - 1;
             }
@@ -162,7 +162,7 @@ impl Board {
         if self.board[disc.x() - 1][disc.y() + 1] == -disc.color {
             let mut x = disc.x() - 2;
             let mut y = disc.y() + 2;
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x - 1;
                 y = y + 1;
             }
@@ -175,7 +175,7 @@ impl Board {
         if self.board[disc.x() + 1][disc.y() + 1] == -disc.color {
             let mut x = disc.x() + 2;
             let mut y = disc.y() + 2;
-            while self.board[x][y] == disc.color {
+            while self.board[x][y] == -disc.color {
                 x = x + 1;
                 y = y + 1;
             }
@@ -187,14 +187,18 @@ impl Board {
         direction
     }
 
-    fn move_disc(&mut self, point: &Point) -> bool {
-        if point.x < 0 || point.x >= Self::SIZE {
+    pub fn move_disc(&mut self, point: &Point) -> bool {
+        if point.x < 1 || point.x > Self::SIZE {
             return false;
         }
-        if point.y < 0 || point.y >= Self::SIZE {
+        if point.y < 1 || point.y > Self::SIZE {
             return false;
         }
         if self.movable_dir[self.turns][point.x][point.y].none() {
+            // println!(
+            //     "turn: {}, x: {}, y: {}, bit_vec:{:?}",
+            //     self.turns, point.x, point.y, self.movable_dir[self.turns][point.x][point.y]
+            // );
             return false;
         }
 
@@ -320,7 +324,7 @@ impl Board {
             }
         }
     }
-    fn is_game_over(&self) -> bool {
+    pub fn is_game_over(&self) -> bool {
         if self.turns == Self::MAX_TURNS {
             return true;
         }
@@ -342,7 +346,7 @@ impl Board {
         true
     }
 
-    fn pass(&mut self) -> bool {
+    pub fn pass(&mut self) -> bool {
         if self.movable_positions[self.turns].len() != 0 {
             return false;
         }
@@ -355,7 +359,7 @@ impl Board {
         true
     }
 
-    fn undo(&mut self) -> bool {
+    pub fn undo(&mut self) -> bool {
         if self.turns == 0 {
             return false;
         }
@@ -391,10 +395,10 @@ impl Board {
 
         true
     }
-    fn count_disc(&self, color: &Color) -> u32 {
+    pub fn count_disc(&self, color: &Color) -> u32 {
         *self.discs.get(color)
     }
-    fn get_color(&self, point: &Point) -> Color {
+    pub fn get_color(&self, point: &Point) -> Color {
         self.board[point.x][point.y]
     }
     fn get_movable_positions(&self) -> &Vec<Point> {
